@@ -1,0 +1,23 @@
+{
+  "ai_name": "小橘",
+  "user_name": "阿星",
+  "persona_file": "persona.md",
+  "llm": {
+    "base_url": "https://openrouter.ai/api/v1",
+    "api_key": "mock",
+    "model": "anthropic/claude-sonnet-4.5",
+    "notes_model": "",
+    "vision": false
+  },
+  "realism": {
+    "quiet_seconds": 5,
+    "max_wait_seconds": 15,
+    "typo_recall_chance": 0.04
+  },
+  "notes": { "enabled": true, "every": 20, "show": 4 },
+  "moments": { "enabled": true, "max_posts_per_day": 2 },
+  "proactive": { "enabled": true, "after_hours": 5, "active_hours": [9, 23] },
+  "red_packet": { "enabled": true },
+  "access_key": "",
+  "port": 8765
+}

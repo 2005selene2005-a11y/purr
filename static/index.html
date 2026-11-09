@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ededed">
+<title>purr</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#ededed;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#111}
+.view{position:fixed;inset:0 0 56px 0;display:none;flex-direction:column}
+.view.on{display:flex}
+header{height:48px;flex:none;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;background:#ededed;border-bottom:1px solid #ddd;position:relative}
+header small{font-weight:400;font-size:12px;color:#888;margin-left:6px}
+header .act{position:absolute;right:14px;font-size:22px;font-weight:400;cursor:pointer}
+#list{flex:1;overflow-y:auto;padding:10px 12px 16px}
+.time{text-align:center;color:#999;font-size:12px;margin:14px 0 8px}
+.sys{text-align:center;color:#999;font-size:12px;margin:8px 0}
+.row{display:flex;align-items:flex-start;margin:10px 0;gap:9px}
+.row.me{flex-direction:row-reverse}
+.av{width:40px;height:40px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600}
+.av.ai{background:linear-gradient(135deg,#ffb35c,#ff8a3d)}
+.av.me{background:linear-gradient(135deg,#7aa7ff,#5a7dff)}
+.bub{max-width:70%;padding:9px 12px;border-radius:6px;font-size:16px;line-height:1.45;word-break:break-word;white-space:pre-wrap;position:relative;background:#fff}
+.me .bub{background:#95ec69}
+.bub.pending{opacity:.55}
+.bub.img{padding:0;background:none}
+.bub.img img{max-width:180px;max-height:240px;border-radius:6px;display:block}
+.bub.stk{padding:0;background:none}.bub.stk img{width:110px;height:110px;object-fit:contain}
+.read{align-self:flex-end;font-size:11px;color:#aaa;margin-bottom:2px}
+.pk{width:230px;border-radius:8px;overflow:hidden;background:#fa9d3b;color:#fff;cursor:pointer}
+.pk.opened{background:#fbd3a3}
+.pk .t{display:flex;gap:10px;align-items:center;padding:12px}
+.pk .ic{width:36px;height:44px;border-radius:4px;background:#f25643;position:relative}
+.pk .ic:after{content:"¥";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fcd56b;font-weight:700}
+.pk .b{font-size:11px;padding:4px 12px;background:#fff;color:#999}
+#typing{color:#888;font-size:13px;padding:0 0 4px 60px;height:20px}
+footer{flex:none;background:#f7f7f7;border-top:1px solid #ddd;padding:8px 8px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:flex-end}
+footer textarea{flex:1;resize:none;border:none;border-radius:6px;padding:9px 10px;font-size:16px;max-height:120px;height:40px;font-family:inherit;outline:none}
+.btn{height:40px;min-width:40px;border:none;border-radius:6px;background:none;font-size:24px;cursor:pointer;color:#333}
+#send{background:#07c160;color:#fff;font-size:15px;padding:0 14px;display:none}
+#panel{display:none;flex-wrap:wrap;gap:10px;padding:10px;background:#f7f7f7;max-height:200px;overflow:auto}
+#panel img{width:64px;height:64px;object-fit:contain;cursor:pointer}
+nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#f7f7f7;border-top:1px solid #ddd;display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#333;cursor:pointer;position:relative}
+nav div b{font-size:22px;font-weight:400}
+nav div.on{color:#07c160}
+.dot{position:absolute;top:6px;right:calc(50% - 18px);background:#fa5151;color:#fff;border-radius:9px;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;display:none}
+/* 朋友圈 */
+#mv{background:#fff}
+#mlist{flex:1;overflow-y:auto}
+.cover{height:260px;background:linear-gradient(160deg,#ffcf8f,#ff9a6b 60%,#c870ff);position:relative;margin-bottom:36px}
+.cover .owner{position:absolute;right:14px;bottom:-24px;display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.cover .owner .av{width:64px;height:64px;font-size:26px;border-radius:8px;border:2px solid #fff}
+.post{display:flex;gap:10px;padding:14px 14px 12px;border-bottom:1px solid #f0f0f0}
+.post .av{width:42px;height:42px}
+.post .bd{flex:1;min-width:0}
+.post .nm{color:#576b95;font-weight:600;font-size:15px;margin-bottom:4px}
+.post .tx{font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.post .ims{display:grid;grid-template-columns:repeat(3,80px);gap:4px;margin-top:6px}
+.post .ims img{width:80px;height:80px;object-fit:cover}
+.post .meta{display:flex;justify-content:space-between;align-items:center;color:#999;font-size:12px;margin-top:8px}
+.post .meta .loc{color:#576b95}
+.post .ops{background:#f7f7f7;border-radius:4px;padding:2px 8px;color:#576b95;cursor:pointer;font-size:14px}
+.post .ops span{margin-left:10px}
+.inter{background:#f7f7f7;margin-top:8px;border-radius:3px;font-size:14px;padding:4px 8px;line-height:1.6}
+.inter .lk{color:#576b95;border-bottom:1px solid #eee;padding-bottom:2px;margin-bottom:2px}
+.inter .lk:last-child{border:none}
+.inter .cm{cursor:pointer}.inter .cm b{color:#576b95;font-weight:500}
+.del{color:#576b95;margin-left:10px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9}
+.modal.on{display:flex}
+.card{background:#fff;border-radius:10px;width:86%;max-width:380px;padding:16px}
+.card textarea{width:100%;height:110px;border:1px solid #eee;border-radius:6px;padding:8px;font-size:15px;font-family:inherit;resize:none}
+.card .r{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+.card button{border:none;border-radius:5px;padding:7px 16px;font-size:15px}
+.card .ok{background:#07c160;color:#fff}
+.pkopen{background:#e9533d;color:#fce0a2;border-radius:12px;width:280px;padding:40px 20px;text-align:center}
+.pkopen .amt{font-size:42px;font-weight:600;margin:14px 0}
+.pkopen small{opacity:.8}
+.toast{position:fixed;top:40%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;display:none;z-index:10}
+</style>
+</head>
+<body>
+<section class="view on" id="cv">
+  <header><span id="title">…</span><small id="tstate"></small></header>
+  <div id="list"></div>
+  <div id="typing"></div>
+  <div id="panel"></div>
+  <footer>
+    <button class="btn" id="stk" title="表情包">☺</button>
+    <textarea id="inp" rows="1" placeholder=""></textarea>
+    <button class="btn" id="imgbtn" title="图片">＋</button>
+    <button class="btn" id="send">发送</button>
+    <input type="file" id="file" accept="image/*" hidden>
+  </footer>
+</section>
+
+<section class="view" id="mv">
+  <header>朋友圈<span class="act" id="compose">📷</span></header>
+  <div id="mlist"></div>
+</section>
+
+<nav>
+  <div class="on" data-v="cv"><b>💬</b>聊天<span class="dot" id="cdot"></span></div>
+  <div data-v="mv" id="mtab"><b>◎</b>朋友圈<span class="dot" id="mdot"></span></div>
+</nav>
+
+<div class="modal" id="m-post"><div class="card">
+  <textarea id="ptext" placeholder="这一刻的想法…"></textarea>
+  <input type="file" id="pimgs" accept="image/*" multiple style="margin-top:8px">
+  <div class="r"><button onclick="hide('m-post')">取消</button><button class="ok" id="pgo">发表</button></div>
+</div></div>
+<div class="modal" id="m-cmt"><div class="card">
+  <textarea id="ctext" style="height:70px"></textarea>
+  <div class="r"><button onclick="hide('m-cmt')">取消</button><button class="ok" id="cgo">发送</button></div>
+</div></div>
+<div class="modal" id="m-pk" onclick="hide('m-pk')"><div class="pkopen">
+  <div id="pkfrom"></div><small id="pknote"></small><div class="amt" id="pkamt"></div><small id="pkbal"></small>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let INFO = {}, REV = 0, MSGS = new Map(), PENDING = [], CUR = 'cv', unreadChat = 0;
+
+function toast(t){ const e=$('#toast'); e.textContent=t; e.style.display='block'; setTimeout(()=>e.style.display='none',1600); }
+function show(id){ $('#'+id).classList.add('on'); }
+function hide(id){ $('#'+id).classList.remove('on'); }
+async function api(path, body){
+  const o = body instanceof FormData ? {method:'POST', body} : body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {};
+  const r = await fetch(path, o); if(!r.ok) throw new Error(r.status); return r.json();
+}
+const ts2d = t => new Date(t.replace(' ', 'T'));
+function fmtTime(t){
+  const d = ts2d(t), n = new Date(), hm = d.toTimeString().slice(0,5);
+  if (d.toDateString() === n.toDateString()) return hm;
+  const y = new Date(n - 864e5); if (d.toDateString() === y.toDateString()) return '昨天 ' + hm;
+  return (d.getMonth()+1) + '月' + d.getDate() + '日 ' + hm;
+}
+function ago(t){
+  const s = (Date.now() - ts2d(t)) / 1000;
+  if (s < 60) return '刚刚'; if (s < 3600) return Math.floor(s/60) + '分钟前';
+  if (s < 86400) return Math.floor(s/3600) + '小时前'; return fmtTime(t);
+}
+
+// ---------- 聊天 ----------
+function bubble(m){
+  const me = m.sender === 'user';
+  if (m.status === 'recalled') return `<div class="sys">${me ? '你' : '"' + esc(INFO.ai_name) + '"'}撤回了一条消息</div>`;
+  if (m.kind === 'system') return `<div class="sys">${esc(m.text)}</div>`;
+  let inner;
+  if (m.kind === 'image') inner = `<div class="bub img"><img src="/media/${esc(m.text)}" loading="lazy"></div>`;
+  else if (m.kind === 'sticker') inner = `<div class="bub stk"><img src="/sticker/${encodeURIComponent(m.text)}"></div>`;
+  else if (m.kind === 'packet') inner = `<div class="pk ${m.meta.opened ? 'opened' : ''}" onclick="openPk(${m.id})"><div class="t"><div class="ic"></div><div>${esc(m.meta.note || '恭喜发财')}${m.meta.opened ? '<br><small>已领取</small>' : ''}</div></div><div class="b">红包</div></div>`;
+  else inner = `<div class="bub ${m.pending ? 'pending' : ''}" ${me && m.id > 0 ? `data-id="${m.id}"` : ''}>${esc(m.text)}</div>`;
+  const read = me && m.id > 0 && m.kind !== 'packet' ? `<span class="read">${m.read_at ? '已读' : ''}</span>` : '';
+  const av = `<div class="av ${me ? 'me' : 'ai'}">${esc((me ? INFO.user_name : INFO.ai_name || '?').slice(0,1))}</div>`;
+  return `<div class="row ${me ? 'me' : ''}">${av}${inner}${read}</div>`;
+}
+function render(){
+  const L = $('#list'), atBottom = L.scrollHeight - L.scrollTop - L.clientHeight < 80;
+  const all = [...MSGS.values()].sort((a,b) => a.id - b.id).concat(PENDING);
+  let html = '', last = 0;
+  for (const m of all){
+    const t = ts2d(m.ts).getTime();
+    if (t - last > 5 * 60e3) html += `<div class="time">${fmtTime(m.ts)}</div>`;
+    last = t; html += bubble(m);
+  }
+  L.innerHTML = html;
+  if (atBottom) L.scrollTop = L.scrollHeight;
+}
+async function poll(){
+  try {
+    const d = await api('/api/poll?rev=' + REV);
+    let newAi = 0;
+    for (const m of d.msgs){
+      if (!MSGS.has(m.id) && m.sender === 'ai') newAi++;
+      MSGS.set(m.id, m);
+      PENDING = PENDING.filter(p => !(m.sender === 'user' && p.text === m.text));
+    }
+    REV = d.rev;
+    $('#tstate').textContent = d.typing ? '对方正在输入…' : '';
+    if (d.msgs.length) render();
+    if (newAi && CUR !== 'cv'){ unreadChat += newAi; dot('#cdot', unreadChat); }
+    dot('#mdot', d.moments_unseen);
+  } catch(e) {}
+  setTimeout(poll, 1500);
+}
+function dot(sel, n){ const e = $(sel); e.style.display = n ? 'block' : 'none'; e.textContent = n > 99 ? '99+' : n; }
+
+async function say(text, kind='text'){
+  const tmp = {id: -Date.now(), ts: new Date(Date.now() - new Date().getTimezoneOffset()*6e4).toISOString().slice(0,19).replace('T',' '), sender:'user', kind, text, meta:{}, pending:true};
+  PENDING.push(tmp); render(); $('#list').scrollTop = 1e9;
+  try { await api('/api/say', {text, kind}); }
+  catch(e){ PENDING = PENDING.filter(p => p !== tmp); render(); if (kind === 'text'){ $('#inp').value = text; syncBtn(); } toast('没发出去'); }
+}
+const inp = $('#inp');
+function syncBtn(){ const has = inp.value.trim(); $('#send').style.display = has ? 'block' : 'none'; $('#imgbtn').style.display = has ? 'none' : 'block'; inp.style.height = '40px'; inp.style.height = Math.min(120, inp.scrollHeight) + 'px'; }
+inp.addEventListener('input', syncBtn);
+inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches){ e.preventDefault(); $('#send').click(); } });
+$('#send').onclick = () => { const t = inp.value.trim(); if (!t) return; inp.value = ''; syncBtn(); say(t); inp.focus(); };
+$('#imgbtn').onclick = () => $('#file').click();
+$('#file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; const fd = new FormData(); fd.append('file', f);
+  try { await api('/api/image', fd); } catch(_) { toast('图片没发出去'); } e.target.value = '';
+};
+$('#stk').onclick = () => { const p = $('#panel'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; };
+// 长按自己的消息撤回（2 分钟内）
+let pressT;
+$('#list').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.bub[data-id]'); if (!b) return;
+  pressT = setTimeout(async () => {
+    const m = MSGS.get(+b.dataset.id); if (!m || Date.now() - ts2d(m.ts) > 120e3) return toast('超过 2 分钟不能撤回');
+    if (confirm('撤回这条消息？')) await api('/api/recall', {id: m.id});
+  }, 550);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev => $('#list').addEventListener(ev, () => clearTimeout(pressT)));
+async function openPk(id){
+  const d = await api('/api/packet/open', {id});
+  $('#pkfrom').textContent = INFO.ai_name + '的红包'; $('#pknote').textContent = d.note;
+  $('#pkamt').textContent = '¥' + Number(d.amount).toFixed(2); $('#pkbal').textContent = '已存入零钱，余额 ¥' + Number(d.balance).toFixed(2);
+  show('m-pk');
+}
+
+// ---------- 朋友圈 ----------
+let cmtTarget = null;
+const nameOf = w => w === 'ai' ? INFO.ai_name : INFO.user_name;
+async function loadMoments(){
+  const d = await api('/api/moments'); api('/api/moments/seen', {}); dot('#mdot', 0);
+  let h = `<div class="cover"><div class="owner">${esc(INFO.user_name)}<div class="av me">${esc(INFO.user_name.slice(0,1))}</div></div></div>`;
+  for (const p of d.items){
+    const likes = p.likes.length ? `<div class="lk">♡ ${p.likes.map(l => esc(nameOf(l.who))).join('，')}</div>` : '';
+    const cms = p.comments.map(c => `<div class="cm" onclick="cmt(${p.id},'${c.who === 'ai' ? 'ai' : ''}')"><b>${esc(nameOf(c.who))}</b>${c.reply_to ? '回复<b>' + esc(nameOf(c.reply_to === 'ai' ? 'ai' : 'user')) + '</b>' : ''}：${esc(c.text)}</div>`).join('');
+    h += `<div class="post"><div class="av ${p.author === 'ai' ? 'ai' : 'me'}">${esc(nameOf(p.author).slice(0,1))}</div><div class="bd">
+      <div class="nm">${esc(nameOf(p.author))}</div><div class="tx">${esc(p.text)}</div>
+      ${p.imgs.length ? `<div class="ims">${p.imgs.map(u => `<img src="${esc(u)}">`).join('')}</div>` : ''}
+      ${p.loc ? `<div class="meta"><span class="loc">${esc(p.loc)}</span></div>` : ''}
+      <div class="meta"><span>${ago(p.ts)}${p.author === 'user' ? `<span class="del" onclick="delPost(${p.id})">删除</span>` : ''}</span>
+        <span class="ops"><span onclick="likePost(${p.id})">♡ 赞</span><span onclick="cmt(${p.id},'')">评论</span></span></div>
+      ${likes || cms ? `<div class="inter">${likes}${cms}</div>` : ''}</div></div>`;
+  }
+  if (!d.items.length) h += `<div class="sys" style="margin:30px">还没有朋友圈，点右上角发一条吧</div>`;
+  $('#mlist').innerHTML = h;
+}
+async function likePost(id){ await api('/api/moments/like', {mid:id}); loadMoments(); }
+async function delPost(id){ if (confirm('删除这条朋友圈？')){ await api('/api/moments/delete', {id}); loadMoments(); } }
+function cmt(mid, replyTo){ cmtTarget = {mid, reply_to: replyTo}; $('#ctext').value = ''; $('#ctext').placeholder = replyTo ? '回复' + INFO.ai_name : '评论'; show('m-cmt'); $('#ctext').focus(); }
+$('#cgo').onclick = async () => { const t = $('#ctext').value.trim(); if (!t) return; await api('/api/moments/comment', {...cmtTarget, text:t}); hide('m-cmt'); loadMoments(); };
+$('#compose').onclick = () => { $('#ptext').value = ''; $('#pimgs').value = ''; show('m-post'); };
+$('#pgo').onclick = async () => {
+  const fd = new FormData(); fd.append('text', $('#ptext').value);
+  for (const f of $('#pimgs').files) fd.append('images', f);
+  try { await api('/api/moments/post', fd); hide('m-post'); loadMoments(); } catch(e){ toast('发不出去'); }
+};
+
+// ---------- 导航 ----------
+document.querySelectorAll('nav div').forEach(n => n.onclick = () => {
+  document.querySelectorAll('nav div,.view').forEach(e => e.classList.remove('on'));
+  n.classList.add('on'); CUR = n.dataset.v; $('#' + CUR).classList.add('on');
+  if (CUR === 'mv') loadMoments(); else { unreadChat = 0; dot('#cdot', 0); $('#list').scrollTop = 1e9; }
+});
+setInterval(() => { if (CUR === 'mv' && !document.querySelector('.modal.on')) loadMoments(); }, 20000);
+
+(async () => {
+  INFO = await api('/api/info');
+  $('#title').textContent = INFO.ai_name; document.title = INFO.ai_name;
+  if (!INFO.moments) $('#mtab').style.display = 'none';
+  if (INFO.stickers.length) $('#panel').innerHTML = INFO.stickers.map(s => `<img src="/sticker/${encodeURIComponent(s)}" title="${esc(s)}" onclick="say('${esc(s).replace(/'/g, "\\'")}','sticker');$('#panel').style.display='none'">`).join('');
+  else $('#stk').style.display = 'none';
+  syncBtn(); poll();
+})();
+</script>
+</body>
+</html>

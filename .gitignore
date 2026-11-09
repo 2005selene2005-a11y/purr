@@ -1,0 +1,8 @@
+config.json
+persona.md
+data/
+__pycache__/
+*.pyc
+stickers/*
+!stickers/.gitkeep
+.env

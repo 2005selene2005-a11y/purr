@@ -1,0 +1,8 @@
+{
+  "ai_name": "小橘",
+  "user_name": "阿星",
+  "db_path": "data/demo.db",
+  "moments": { "enabled": true, "max_posts_per_day": 0 },
+  "proactive": { "enabled": false },
+  "port": 8766
+}
