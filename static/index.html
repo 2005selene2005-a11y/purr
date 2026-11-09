@@ -21,6 +21,7 @@ header .act{position:absolute;right:14px;font-size:22px;font-weight:400;cursor:p
 .av{width:40px;height:40px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600}
 .av.ai{background:linear-gradient(135deg,#ffb35c,#ff8a3d)}
 .av.me{background:linear-gradient(135deg,#7aa7ff,#5a7dff)}
+.av{cursor:pointer;overflow:hidden}.av img{width:100%;height:100%;object-fit:cover;display:block}
 .bub{max-width:70%;padding:9px 12px;border-radius:6px;font-size:16px;line-height:1.45;word-break:break-word;white-space:pre-wrap;position:relative;background:#fff}
 .me .bub{background:#95ec69}
 .bub.pending{opacity:.55}
@@ -49,7 +50,7 @@ nav div.on{color:#07c160}
 /* 朋友圈 */
 #mv{background:#fff}
 #mlist{flex:1;overflow-y:auto}
-.cover{height:260px;background:linear-gradient(160deg,#ffcf8f,#ff9a6b 60%,#c870ff);position:relative;margin-bottom:36px}
+.cover{height:260px;background:linear-gradient(160deg,#ffcf8f,#ff9a6b 60%,#c870ff) center/cover;position:relative;margin-bottom:36px;cursor:pointer}
 .cover .owner{position:absolute;right:14px;bottom:-24px;display:flex;align-items:center;gap:10px;color:#fff;font-weight:600;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.3)}
 .cover .owner .av{width:64px;height:64px;font-size:26px;border-radius:8px;border:2px solid #fff}
 .post{display:flex;gap:10px;padding:14px 14px 12px;border-bottom:1px solid #f0f0f0}
@@ -93,6 +94,8 @@ nav div.on{color:#07c160}
     <button class="btn" id="imgbtn" title="图片">＋</button>
     <button class="btn" id="send">发送</button>
     <input type="file" id="file" accept="image/*" hidden>
+    <input type="file" id="avfile" accept="image/*" hidden>
+    <input type="file" id="coverfile" accept="image/*" hidden>
   </footer>
 </section>
 
@@ -125,6 +128,10 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let INFO = {}, REV = 0, MSGS = new Map(), PENDING = [], CUR = 'cv', unreadChat = 0;
 
+function avatar(who, extra=''){
+  const url = (INFO.avatars || {})[who], name = who === 'ai' ? INFO.ai_name : INFO.user_name;
+  return `<div class="av ${who === 'ai' ? 'ai' : 'me'} ${extra}" data-who="${who}">${url ? `<img src="${esc(url)}">` : esc((name || '?').slice(0,1))}</div>`;
+}
 function toast(t){ const e=$('#toast'); e.textContent=t; e.style.display='block'; setTimeout(()=>e.style.display='none',1600); }
 function show(id){ $('#'+id).classList.add('on'); }
 function hide(id){ $('#'+id).classList.remove('on'); }
@@ -156,7 +163,7 @@ function bubble(m){
   else if (m.kind === 'packet') inner = `<div class="pk ${m.meta.opened ? 'opened' : ''}" onclick="openPk(${m.id})"><div class="t"><div class="ic"></div><div>${esc(m.meta.note || '恭喜发财')}${m.meta.opened ? '<br><small>已领取</small>' : ''}</div></div><div class="b">红包</div></div>`;
   else inner = `<div class="bub ${m.pending ? 'pending' : ''}" ${me && m.id > 0 ? `data-id="${m.id}"` : ''}>${esc(m.text)}</div>`;
   const read = me && m.id > 0 && m.kind !== 'packet' ? `<span class="read">${m.read_at ? '已读' : ''}</span>` : '';
-  const av = `<div class="av ${me ? 'me' : 'ai'}">${esc((me ? INFO.user_name : INFO.ai_name || '?').slice(0,1))}</div>`;
+  const av = avatar(me ? 'user' : 'ai');
   return `<div class="row ${me ? 'me' : ''}">${av}${inner}${read}</div>`;
 }
 function render(){
@@ -229,11 +236,11 @@ let cmtTarget = null;
 const nameOf = w => w === 'ai' ? INFO.ai_name : INFO.user_name;
 async function loadMoments(){
   const d = await api('/api/moments'); api('/api/moments/seen', {}); dot('#mdot', 0);
-  let h = `<div class="cover"><div class="owner">${esc(INFO.user_name)}<div class="av me">${esc(INFO.user_name.slice(0,1))}</div></div></div>`;
+  let h = `<div class="cover" id="cover" title="点一下换背景" ${d.cover ? `style="background-image:url('${esc(d.cover)}')"` : ''}><div class="owner">${esc(INFO.user_name)}${avatar('user')}</div></div>`;
   for (const p of d.items){
     const likes = p.likes.length ? `<div class="lk">♡ ${p.likes.map(l => esc(nameOf(l.who))).join('，')}</div>` : '';
-    const cms = p.comments.map(c => `<div class="cm" onclick="cmt(${p.id},'${c.who === 'ai' ? 'ai' : ''}')"><b>${esc(nameOf(c.who))}</b>${c.reply_to ? '回复<b>' + esc(nameOf(c.reply_to === 'ai' ? 'ai' : 'user')) + '</b>' : ''}：${esc(c.text)}</div>`).join('');
-    h += `<div class="post"><div class="av ${p.author === 'ai' ? 'ai' : 'me'}">${esc(nameOf(p.author).slice(0,1))}</div><div class="bd">
+    const cms = p.comments.map(c => `<div class="cm" data-cid="${c.id}" onclick="cmt(${p.id},'${c.who === 'ai' ? 'ai' : ''}')"><b>${esc(nameOf(c.who))}</b>${c.reply_to ? '回复<b>' + esc(nameOf(c.reply_to === 'ai' ? 'ai' : 'user')) + '</b>' : ''}：${esc(c.text)}</div>`).join('');
+    h += `<div class="post">${avatar(p.author === 'ai' ? 'ai' : 'user')}<div class="bd">
       <div class="nm">${esc(nameOf(p.author))}</div><div class="tx">${esc(p.text)}</div>
       ${p.imgs.length ? `<div class="ims">${p.imgs.map(u => `<img src="${esc(u)}">`).join('')}</div>` : ''}
       ${p.loc ? `<div class="meta"><span class="loc">${esc(p.loc)}</span></div>` : ''}
@@ -244,6 +251,32 @@ async function loadMoments(){
   if (!d.items.length) h += `<div class="sys" style="margin:30px">还没有朋友圈，点右上角发一条吧</div>`;
   $('#mlist').innerHTML = h;
 }
+// 点头像换头像；点背景换朋友圈背景；长按评论删除
+let avWho = null, cmtPress = null, cmtLong = false;
+document.addEventListener('click', e => {
+  if (cmtLong){ cmtLong = false; e.stopPropagation(); e.preventDefault(); return; }
+  const a = e.target.closest('.av[data-who]');
+  if (a){ e.stopPropagation(); avWho = a.dataset.who; if (confirm('换' + (avWho === 'ai' ? INFO.ai_name : '你') + '的头像？')) $('#avfile').click(); return; }
+  if (e.target.id === 'cover' && confirm('换朋友圈背景？')) $('#coverfile').click();
+}, true);
+$('#avfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f || !avWho) return; const fd = new FormData(); fd.append('who', avWho); fd.append('file', f);
+  try { const d = await api('/api/avatar', fd); INFO.avatars[avWho] = d.url; render(); if (CUR === 'mv') loadMoments(); } catch(_) { toast('头像没换成'); }
+  e.target.value = '';
+};
+$('#coverfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; const fd = new FormData(); fd.append('file', f);
+  try { await api('/api/moments/cover', fd); loadMoments(); } catch(_) { toast('背景没换成'); }
+  e.target.value = '';
+};
+$('#mlist').addEventListener('pointerdown', e => {
+  const c = e.target.closest('.cm[data-cid]'); if (!c) return;
+  cmtPress = setTimeout(async () => {
+    cmtLong = true; setTimeout(() => cmtLong = false, 800);   // 只吞掉长按松手后的那一下点击
+    if (confirm('删除这条评论？')){ await api('/api/moments/comment/delete', {id: +c.dataset.cid}); loadMoments(); }
+  }, 550);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev => $('#mlist').addEventListener(ev, () => clearTimeout(cmtPress)));
 async function likePost(id){ await api('/api/moments/like', {mid:id}); loadMoments(); }
 async function delPost(id){ if (confirm('删除这条朋友圈？')){ await api('/api/moments/delete', {id}); loadMoments(); } }
 function cmt(mid, replyTo){ cmtTarget = {mid, reply_to: replyTo}; $('#ctext').value = ''; $('#ctext').placeholder = replyTo ? '回复' + INFO.ai_name : '评论'; show('m-cmt'); $('#ctext').focus(); }

@@ -31,9 +31,29 @@ def index():
 def info():
     c = db.conn()
     bal = float(db.kv(c, "balance") or CFG["red_packet"]["start_balance"])
+    avatars = {w: db.kv(c, "avatar_" + w) or "" for w in ("user", "ai")}
     c.close()
     return {"ai_name": CFG["ai_name"], "user_name": CFG["user_name"], "stickers": chat.stickers(),
-            "balance": bal, "moments": CFG["moments"]["enabled"], "red_packet": CFG["red_packet"]["enabled"]}
+            "balance": bal, "moments": CFG["moments"]["enabled"], "red_packet": CFG["red_packet"]["enabled"],
+            "avatars": avatars}
+
+
+async def _save_image(file, prefix):
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "不是图片")
+    name = prefix + "_" + uuid.uuid4().hex[:10] + (Path(file.filename or "x.jpg").suffix.lower()[:6] or ".jpg")
+    (chat.MEDIA / name).write_bytes(await file.read())
+    return "/media/" + name
+
+
+@app.post("/api/avatar")
+async def avatar(who: str = Form(...), file: UploadFile = File(...)):
+    """换头像：who = user（你）或 ai"""
+    if who not in ("user", "ai"):
+        raise HTTPException(400)
+    url = await _save_image(file, "avatar_" + who)
+    c = db.conn(); db.kv(c, "avatar_" + who, url); c.commit(); c.close()
+    return {"url": url}
 
 
 @app.get("/api/poll")
@@ -129,6 +149,23 @@ def moments_feed(page: int = 0):
     cover = db.kv(c, "moments_cover") or ""
     c.close()
     return {"items": out, "cover": cover}
+
+
+@app.post("/api/moments/cover")
+async def moments_cover(file: UploadFile = File(...)):
+    """换朋友圈背景"""
+    url = await _save_image(file, "cover")
+    c = db.conn(); db.kv(c, "moments_cover", url); c.commit(); c.close()
+    return {"url": url}
+
+
+@app.post("/api/moments/comment/delete")
+def moments_comment_delete(p: dict = Body(...)):
+    """删除单条评论（你的或 AI 的都能删）"""
+    c = db.conn()
+    c.execute("UPDATE moment_comments SET status='deleted' WHERE id=?", (int(p["id"]),))
+    c.commit(); c.close()
+    return {"ok": True}
 
 
 @app.post("/api/moments/seen")
