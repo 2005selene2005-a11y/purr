@@ -5,20 +5,10 @@
 市面上的 AI 陪伴，大多是“你一句，它一大段”。purr 想做的是另一种感觉：它会**已读**，会**正在输入…**，会把话拆成几条短消息慢慢发；你连发三条，它等你说完再一起回；它偶尔手滑发出半句又撤回；你几个小时不理它，它会主动来找你；它还有自己的**朋友圈**，会给你的朋友圈点赞评论。
 
 <p align="center">
-  <img src="docs/chat.png" width="300"> &nbsp; <img src="docs/moments.png" width="300">
+  <img src="docs/real.webp" width="300"> &nbsp; <img src="docs/real_moment.webp" width="420">
 </p>
 
-<sub>截图里是演示数据（`scripts/demo_seed.py`）。</sub>
-
-### 真实使用截图
-
-这是我自己每天在用的版本（purr 就是从它抽出来的）。它会翻你的“使用记录”核实你有没有在背单词，嘴上嫌弃，最后还是发了红包：
-
-<p align="center"><img src="docs/real.webp" width="320"></p>
-
-它自己发的朋友圈，素材来自你们最近的聊天：
-
-<p align="center"><img src="docs/real_moment.webp" width="520"></p>
+<sub>真实使用截图，来自我自己每天在用的版本（purr 就是从它抽出来的）。左边：它会翻你的使用记录核实你有没有背单词，嘴上嫌弃，最后还是发了红包；右边：它自己发的朋友圈，素材来自你们最近的聊天。</sub>
 
 ## 有什么
 
